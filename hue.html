@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <script>
+      function __MAIN__(input_data) {
+        let XML1 = new XMLHttpRequest();
+        console.log("http:" + window.location.origin.split(":")[1] + ":56123");
+        XML1.open(
+          "POST",
+          "http:" + window.location.origin.split(":")[1] + ":56123/"
+        );
+        XML1.responseType = "json";
+        XML1.onload = function () {
+          responseJSON = XML1.response;
+          console.log(responseJSON);
+          for (const info in responseJSON) {
+            if (Object.hasOwnProperty.call(responseJSON, info)) {
+              const element = responseJSON[info];
+              if (element["status"] === "ask") {
+                document.querySelector(".data-enter").style.display = "block";
+                document.querySelector(".data-enter h1").textContent =
+                  element["info"];
+                document.querySelector(".sub").addEventListener("click", () => {
+                  __MAIN__(
+                    "input=" + document.querySelector(".data_enter-input").value
+                  );
+                });
+              }
+              if (info === "part_7") {
+                document.querySelector(".images").innerHTML = `
+                    <h1>Please Press The Bridge Button</h1>
+                    <img src="assets/neo-button.jpg" width="200"></img>
+                    `;
+              }
+              if (element["info"] !== undefined) {
+                document.querySelector(".rl-term").innerHTML +=
+                  "<br>" +
+                  new Date().getHours() +
+                  ":" +
+                  new Date().getMinutes() +
+                  " --> " +
+                  element["info"] +
+                  "<br>";
+              }
+              if (info === "success") {
+                if (element === true) {
+                  document.querySelector(".success").style.display = "block";
+                  document.querySelector(".checkmark").style.animation =
+                    "fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both";
+                  document.querySelector(".checkmark__circle").style.animation =
+                    "stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards";
+                  document.querySelector(".checkmark__check").style.animation =
+                    "stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards";
+                  document.querySelector(".success h1").textContent =
+                    "La configuration est FINIE";
+                }
+                document.querySelector(".rl-term").innerHTML +=
+                  "<br>" +
+                  new Date().getHours() +
+                  ":" +
+                  new Date().getMinutes() +
+                  " --> success: " +
+                  element +
+                  "<br>";
+              }
+            }
+          }
+        };
+        XML1.send(input_data);
+      }
+    </script>
+
+    <div class="data-enter" style="display: none">
+      <h1>...</h1>
+      <input type="text" class="data_enter-input" />
+      <button class="sub">Submit</button>
+    </div>
+    <div class="images"></div>
+    <button class="button-17" role="button">Start</button>
+    <script>
+      document.querySelector(".button-17").addEventListener("click", () => {
+        document.querySelector(".button-17").textContent = "restart";
+        document.querySelector(".images").innerHTML = "";
+        __MAIN__("");
+      });
+    </script>
+    <div class="success" style="display: none">
+      <h1></h1>
+      <h6>https://codepen.io/kuvinod5/pen/WNvzazr</h6>
+      <!-- https://getcssscan.com/css-buttons-examples -->
+
+      <div class="success-animation">
+        <svg
+          class="checkmark"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 52 52"
+        >
+          <circle
+            class="checkmark__circle"
+            cx="26"
+            cy="26"
+            r="25"
+            fill="none"
+          />
+          <path
+            class="checkmark__check"
+            fill="none"
+            d="M14.1 27.2l7.1 7.2 16.7-16.8"
+          />
+        </svg>
+      </div>
+
+      <style>
+        /* CSS */
+        .button-17 {
+          align-items: center;
+          appearance: none;
+          background-color: #fff;
+          border-radius: 24px;
+          border-style: none;
+          box-shadow: rgba(0, 0, 0, 0.2) 0 3px 5px -1px,
+            rgba(0, 0, 0, 0.14) 0 6px 10px 0, rgba(0, 0, 0, 0.12) 0 1px 18px 0;
+          box-sizing: border-box;
+          color: #3c4043;
+          cursor: pointer;
+          display: inline-flex;
+          fill: currentcolor;
+          font-family: "Google Sans", Roboto, Arial, sans-serif;
+          font-size: 14px;
+          font-weight: 500;
+          height: 48px;
+          justify-content: center;
+          letter-spacing: 0.25px;
+          line-height: normal;
+          max-width: 100%;
+          overflow: visible;
+          padding: 2px 24px;
+          position: relative;
+          text-align: center;
+          text-transform: none;
+          transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 15ms linear 30ms,
+            transform 270ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+          width: auto;
+          will-change: transform, opacity;
+          z-index: 0;
+        }
+
+        .button-17:hover {
+          background: #f6f9fe;
+          color: #174ea6;
+        }
+
+        .button-17:active {
+          box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%),
+            0 8px 12px 6px rgb(60 64 67 / 15%);
+          outline: none;
+        }
+
+        .button-17:focus {
+          outline: none;
+          border: 2px solid #4285f4;
+        }
+
+        .button-17:not(:disabled) {
+          box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+            rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
+        }
+
+        .button-17:not(:disabled):hover {
+          box-shadow: rgba(60, 64, 67, 0.3) 0 2px 3px 0,
+            rgba(60, 64, 67, 0.15) 0 6px 10px 4px;
+        }
+
+        .button-17:not(:disabled):focus {
+          box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+            rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
+        }
+
+        .button-17:not(:disabled):active {
+          box-shadow: rgba(60, 64, 67, 0.3) 0 4px 4px 0,
+            rgba(60, 64, 67, 0.15) 0 8px 12px 6px;
+        }
+
+        .button-17:disabled {
+          box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+            rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f2f2f2;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 0;
+          color: #333;
+        }
+
+        .rl-term {
+          box-shadow: inset 0 0 0;
+          box-shadow: 0 0 4px;
+          width: 70%;
+          height: 200px;
+          overflow: scroll;
+        }
+
+        .data-enter {
+          display: none;
+          text-align: center;
+          margin-top: 20px;
+          background-color: #fff;
+          padding: 20px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-enter h1 {
+          margin-bottom: 10px;
+          color: #333;
+        }
+
+        .data_enter-input {
+          padding: 10px;
+        }
+
+        .sub {
+          padding: 10px 20px;
+          background-color: #4caf50;
+          color: white;
+          border: none;
+          border-radius: 3px;
+          cursor: pointer;
+        }
+
+        .images {
+          text-align: center;
+          margin-top: 20px;
+        }
+
+        .success {
+          text-align: center;
+          margin-top: 20px;
+          color: black;
+          padding: 20px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .success h1 {
+          margin-bottom: 10px;
+        }
+
+        .success h6 {
+          color: #eee;
+        }
+
+        .success-animation {
+          margin: 150px auto;
+        }
+
+        .checkmark {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          display: block;
+          stroke-width: 2;
+          stroke: #fff;
+          stroke-miterlimit: 10;
+          box-shadow: inset 0px 0px 0px #fff;
+          position: relative;
+          top: 5px;
+          right: 5px;
+          margin: 0 auto;
+        }
+
+        .checkmark__circle {
+          stroke-dasharray: 166;
+          stroke-dashoffset: 166;
+          stroke-width: 2;
+          stroke-miterlimit: 10;
+          stroke: #fff;
+          fill: rgb(13, 255, 0);
+        }
+
+        .checkmark__check {
+          transform-origin: 50% 50%;
+          stroke-dasharray: 48;
+          stroke-dashoffset: 48;
+        }
+
+        @keyframes stroke {
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes scale {
+          0%,
+          100% {
+            transform: none;
+          }
+
+          50% {
+            transform: scale3d(1.1, 1.1, 1);
+          }
+        }
+
+        @keyframes fill {
+          100% {
+            box-shadow: inset 0px 0px 0px 30px #4caf50;
+          }
+        }
+      </style>
+    </div>
+    <br />
+    <br />
+    <br />
+    <h2>Logs</h2>
+    <div class="rl-term"></div>
+  </body>
+</html>
