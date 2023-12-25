@@ -12,9 +12,16 @@ serverPort = 56127
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
       self.send_response(200)
-      self.send_header("Content-type", "application/json")
+      parsed_url = urlparse(self.path)
+      query_params = parse_qs(parsed_url.query)
       self.send_header("Access-Control-Allow-Origin", "*")
-      self.end_headers()
+      if query_params.get("close") != None:
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(bytes('<script>window.close();</script>'.encode('utf-8')))
+      else:
+          self.send_header("Content-type", "application/json")
+          self.end_headers()
       if isfile("../../../etc/py/hue/ip.rlbconf"):
         f = open("../../../etc/py/hue/ip.rlbconf", "r")
         ip = f.read()
@@ -27,8 +34,6 @@ class MyServer(BaseHTTPRequestHandler):
         f.close()
       else:
           return
-      parsed_url = urlparse(self.path)
-      query_params = parse_qs(parsed_url.query)
       if query_params.get("action") != None:
           if query_params.get("action")[0] == "get_lights":
               self.wfile.write(bytes('['.encode('utf-8')))

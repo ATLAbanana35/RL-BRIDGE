@@ -230,7 +230,7 @@ const data_2 = [
     <div class="youtube-input">
     <label for="youtubeUrl">Please enter the url of the YouTube video :</label>
     <input type="text" id="youtubeUrl" placeholder="Enter URL here...">
-    <button onclick="playYouTubeMusic()">Download music (you can upload it to a drive)</button>
+    <button onclick="playYouTubeMusic()">Play Music</button>
   </div>
 
 
@@ -374,7 +374,7 @@ function playMusic() {
     "http://192.168.1.140:56126/?action=play_song&param=" +
       localStorage.getItem("current_speaker") +
       "&param2=" +
-      url
+      encodeURIComponent(url)
   );
   XMLX_2.onload = function () {};
   XMLX_2.send();
@@ -384,21 +384,21 @@ function playYouTubeMusic() {
   let XMLX_2 = new XMLHttpRequest();
   XMLX_2.open(
     "GET",
-    "http://192.168.1.140:56126/?action=You2Mp3&param=" +
+    "https://loinesservers.alwaysdata.net/video.php?v=" +
       encodeURIComponent(url)
   );
   XMLX_2.responseType = "json";
   XMLX_2.onload = function () {
-    console.log(XMLX_2.response);
-    if (XMLX_2.response[0] != undefined) {
-      function downloadFile(filePath) {
-        var link = document.createElement("a");
-        link.href = filePath;
-        link.download = filePath.substr(filePath.lastIndexOf("/") + 1);
-        link.click();
-      }
-      downloadFile(XMLX_2.response[0]);
-    }
+    let XMLX_3 = new XMLHttpRequest();
+    XMLX_3.open(
+      "GET",
+      "http://192.168.1.140:56126/?action=play_song&param=" +
+        localStorage.getItem("current_speaker") +
+        "&param2=https%3A%2F%2Floinesservers.alwaysdata.net%2Ftmp%2Fcurrent.mp3"
+    );
+    XMLX_3.responseType = "json";
+    XMLX_3.onload = function () {};
+    XMLX_3.send();
   };
   XMLX_2.send();
 }

@@ -1,3 +1,5 @@
+let timesOut = [];
+
 function xyBriToHex(x, y, bri) {
   z = 1.0 - x - y;
   Y = bri / 255.0; // Brightness of lamp
@@ -38,68 +40,81 @@ function componentToHex(c) {
 function rgbToHex(r, g, b) {
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
-function hexToXyBri(hex) {
-  // Convertir HEX en RGB
-  const rgb = hexToRgb(hex);
+function getXY(red, green, blue) {
+  if (red > 0.04045) {
+    red = Math.pow((red + 0.055) / (1.0 + 0.055), 2.4);
+  } else red = red / 12.92;
 
-  // Convertir RGB en XYBri
-  return rgbToXyBri(rgb.r, rgb.g, rgb.b);
+  if (green > 0.04045) {
+    green = Math.pow((green + 0.055) / (1.0 + 0.055), 2.4);
+  } else green = green / 12.92;
+
+  if (blue > 0.04045) {
+    blue = Math.pow((blue + 0.055) / (1.0 + 0.055), 2.4);
+  } else blue = blue / 12.92;
+
+  var X = red * 0.664511 + green * 0.154324 + blue * 0.162028;
+  var Y = red * 0.283881 + green * 0.668433 + blue * 0.047685;
+  var Z = red * 0.000088 + green * 0.07231 + blue * 0.986039;
+  var x = X / (X + Y + Z);
+  var y = Y / (X + Y + Z);
+  return new Array(x, y);
+}
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
 }
 
-function hexToRgb(hex) {
-  // Supprimer le caractère '#' s'il est présent
-  hex = hex.replace(/^#/, "");
+function kelvinToRgb(kelvin) {
+  const temperature = kelvin / 100;
+  if (kelvin <= 0) {
+    // Gérer ce cas particulier
+    return [0, 0, 0];
+  }
 
-  // Convertir chaque paire de caractères HEX en décimal
-  const bigint = parseInt(hex, 16);
+  let r, g, b;
 
-  // Extraire les composantes R, G et B
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
+  if (temperature <= 66) {
+    r = 255;
+    g = temperature;
+    g = 99.4708025861 * Math.log(g) - 161.1195681661;
+
+    if (temperature <= 19) {
+      b = 0;
+    } else {
+      b = temperature - 10;
+      b = 138.5177312231 * Math.log(b) - 305.0447927307;
+    }
+  } else {
+    r = temperature - 60;
+    r = 329.698727446 * Math.pow(r, -0.1332047592);
+
+    g = temperature - 60;
+    g = 288.1221695283 * Math.pow(g, -0.0755148492);
+
+    b = 255;
+  }
+
+  r = Math.round(clamp(r, 0, 255));
+  g = Math.round(clamp(g, 0, 255));
+  b = Math.round(clamp(b, 0, 255));
 
   return { r, g, b };
 }
 
-function rgbToXyBri(r, g, b) {
-  // Convertir RGB en XY
-  const xy = rgbToXy(r, g, b);
-
-  // Luminosité maximale pour Philips Hue est 254
-  const bri = Math.max(r, g, b);
-
-  return { xy, bri };
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+function ctToKelvin(ct) {
+  return Math.round(1000000 / ct);
 }
 
-function rgbToXy(r, g, b) {
-  // Correction gamma inverse
-  const gammaCorrect = (value) => {
-    value = value / 255.0;
-    return value <= 0.04045
-      ? value / 12.92
-      : Math.pow((value + 0.055) / 1.055, 2.4);
-  };
-
-  // Correction gamma inverse des composantes R, G et B
-  const rGamma = gammaCorrect(r);
-  const gGamma = gammaCorrect(g);
-  const bGamma = gammaCorrect(b);
-
-  // Conversion des composantes R, G et B vers les coordonnées XYZ
-  const X = rGamma * 0.649926 + gGamma * 0.103455 + bGamma * 0.197109;
-  const Y = rGamma * 0.234327 + gGamma * 0.743075 + bGamma * 0.022598;
-  const Z = rGamma * 0.0 + gGamma * 0.053077 + bGamma * 1.035763;
-
-  // Calcul des coordonnées xy
-  let x = X / (X + Y + Z);
-  let y = Y / (X + Y + Z);
-
-  // Correction si les coordonnées sont en dehors de la gamme [0, 1]
-  x = isNaN(x) ? 0.0 : x;
-  y = isNaN(y) ? 0.0 : y;
-
-  return { x, y };
-}
 function onUpdate(App) {
   console.log(App);
   if (App === "lights") {
@@ -146,6 +161,9 @@ function onUpdate(App) {
     XMLX.send();
   }
   if (App === "Modify_State") {
+    timesOut.forEach((timeout) => {
+      clearInterval(timeout);
+    });
     let XMLX = new XMLHttpRequest();
     XMLX.open(
       "GET",
@@ -174,8 +192,83 @@ function onUpdate(App) {
           if (lightInfo.type === "Color temperature light") {
             // Traitement spécifique pour les lampes "Color temperature light"
             const ctInfo = document.createElement("p");
-            ctInfo.textContent = `Color Temperature: ${lightInfo.state.ct}`;
+            ctInfo.innerHTML = `Color Temperature: ${
+              lightInfo.state.ct
+            } <br>Color Temperature <div class="color_show" style="width:100%;height:10px;background:rgba(${
+              kelvinToRgb(ctToKelvin(lightInfo.state.ct)).r
+            },${kelvinToRgb(ctToKelvin(lightInfo.state.ct)).g},${
+              kelvinToRgb(ctToKelvin(lightInfo.state.ct)).b
+            }, 0.6);"></div> <br> : <input type="range" data-last="${
+              lightInfo.state.ct
+            }" class="volume" min="154" value="${
+              lightInfo.state.ct
+            }" max="500" step="1" id="CT" /> <input style="display: none;" type="range" data-last="${
+              lightInfo.state.ct
+            }-2" class="volume" min="0" value="${
+              lightInfo.state.ct
+            }" max="453" step="1" id="BRIGHT" />`;
             lightCard.appendChild(ctInfo);
+            ctInfo.querySelector("#CT").addEventListener("input", (e) => {
+              ctInfo.querySelector(".color_show").style.background = `rgba(${
+                kelvinToRgb(ctToKelvin(e.target.value - 153)).r
+              },${kelvinToRgb(ctToKelvin(e.target.value - 153)).g},${
+                kelvinToRgb(ctToKelvin(e.target.value - 153)).b
+              }, 0.6)`;
+              console.log(e.target.value);
+            });
+            ctInfo.querySelectorAll("input").forEach((inputs) => {
+              timesOut.push(
+                setInterval(() => {
+                  if (inputs.dataset["last"] !== inputs.value) {
+                    if (inputs.id == "CT") {
+                      let XMLX_001 = new XMLHttpRequest();
+                      XMLX_001.open(
+                        "GET",
+                        "http:" +
+                          window.location.origin.split(":")[1] +
+                          ":56127/?action=set_state&param=" +
+                          light_index +
+                          "&param2=" +
+                          encodeURIComponent(
+                            JSON.stringify({
+                              bri: ctInfo.querySelectorAll("input")[1].value,
+                              on: true,
+                              ct: Number(inputs.value) - 153,
+                            })
+                          )
+                      );
+                      XMLX_001.responseType = "json";
+                      XMLX_001.onload = function () {};
+                      XMLX_001.send();
+                      inputs.dataset["last"] = inputs.value;
+                    } else {
+                      let XMLX_001 = new XMLHttpRequest();
+                      XMLX_001.open(
+                        "GET",
+                        "http:" +
+                          window.location.origin.split(":")[1] +
+                          ":56127/?action=set_state&param=" +
+                          light_index +
+                          "&param2=" +
+                          encodeURIComponent(
+                            JSON.stringify({
+                              bri: inputs.value,
+                              on: true,
+                              ct: Number(
+                                ctInfo.querySelectorAll("input")[0].value - 153
+                              ),
+                            })
+                          )
+                      );
+                      XMLX_001.responseType = "json";
+                      XMLX_001.onload = function () {};
+                      XMLX_001.send();
+                      inputs.dataset["last"] = inputs.value;
+                    }
+                  }
+                }, 1000)
+              );
+            });
           } else {
             // Traitement commun pour les autres types de lampes
             const xybri = [
@@ -183,37 +276,92 @@ function onUpdate(App) {
               lightInfo.state.xy[1],
               lightInfo.state.bri,
             ];
+            console.log(lightInfo.state);
+
             const hex = xyBriToHex(xybri[0], xybri[1], xybri[2]);
             stateInfo.innerHTML = `State: ${
               lightInfo.state.on ? "On" : "Off"
-            } <button onclick="toggleState(this)" data-toggle="${
-              lightInfo.state.on ? "on" : "off"
-            }" data-light="${light_index}">Toggle</button><input value="${hex}" data-last="${hex}" type="color"></input><input type="range" data-last="${hex}" class="volume" min="0" value="${
+            }<input value="${hex}" data-last="${hex}" type="color"></input><input type="range" data-last="${
+              lightInfo.state.bri
+            }" class="volume" min="0" value="${
               lightInfo.state.bri
             }" max="254" step="1" />`;
             lightCard.appendChild(stateInfo);
-
             const brightnessInfo = document.createElement("p");
             brightnessInfo.textContent = `Brightness: ${lightInfo.state.bri}`;
             lightCard.appendChild(brightnessInfo);
+            stateInfo.querySelectorAll("input").forEach((inputs) => {
+              timesOut.push(
+                setInterval(() => {
+                  if (inputs.dataset["last"] !== inputs.value) {
+                    if (inputs.type === "color") {
+                      let XMLX_001 = new XMLHttpRequest();
+                      XMLX_001.open(
+                        "GET",
+                        "http:" +
+                          window.location.origin.split(":")[1] +
+                          ":56127/?action=set_state&param=" +
+                          light_index +
+                          "&param2=" +
+                          encodeURIComponent(
+                            JSON.stringify({
+                              on: true,
+                              bri: stateInfo.querySelectorAll("input")[1].value,
+                              xy: getXY(
+                                hexToRgb(inputs.value).r,
+                                hexToRgb(inputs.value).g,
+                                hexToRgb(inputs.value).b
+                              ),
+                            })
+                          )
+                      );
+                      XMLX_001.responseType = "json";
+                      XMLX_001.onload = function () {};
+                      XMLX_001.send();
+                      inputs.dataset["last"] = inputs.value;
+                    } else {
+                      let XMLX_001 = new XMLHttpRequest();
+                      XMLX_001.open(
+                        "GET",
+                        "http:" +
+                          window.location.origin.split(":")[1] +
+                          ":56127/?action=set_state&param=" +
+                          light_index +
+                          "&param2=" +
+                          encodeURIComponent(
+                            JSON.stringify({
+                              on: true,
+                              bri: Number(inputs.value),
+                              xy: getXY(
+                                hexToRgb(
+                                  stateInfo.querySelectorAll("input")[0].value
+                                ).r,
+                                hexToRgb(
+                                  stateInfo.querySelectorAll("input")[0].value
+                                ).g,
+                                hexToRgb(
+                                  stateInfo.querySelectorAll("input")[0].value
+                                ).b
+                              ),
+                            })
+                          )
+                      );
+                      XMLX_001.responseType = "json";
+                      XMLX_001.onload = function () {};
+                      XMLX_001.send();
+                      inputs.dataset["last"] = inputs.value;
+                    }
+                  }
+                }, 1000)
+              );
+            });
           }
 
           lightsContainer.appendChild(lightCard);
-
-          stateInfo.querySelectorAll("input").forEach((inputs) => {
-            setTimeout(() => {
-              if (inputs.dataset["last"] !== inputs.value) {
-                console.log(inputs.value);
-              }
-            }, 1000);
-          });
         }
       }
     };
     XMLX.send();
-    setTimeout(() => {
-      IOSPage.update("Modify_State");
-    }, 3000);
   }
 }
 const IOSPage = new WebUI("Hue App", onUpdate);
